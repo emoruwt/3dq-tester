@@ -1,40 +1,60 @@
 // Counter is updated here
-always_ff @ (posedge CLOCK_50_I or negedge resetn) begin
-	if (resetn == 1'b0) begin
-		counter <= 8'h00;
-	end else begin
-		if (clock_1Hz_buf == 1'b0 && clock_1Hz == 1'b1) begin
-			if (stop_count == 1'b0) begin
-				
-                # Count FROM 0 -> 59
-                if (counter[3:0] < 4'd9) // 1st digit 
-                    if (direction == 1'b1) counter[3:0] <= counter[3:0] + 4'h1;
-                    
-                    if (direction == 1'b0) 
-                        if (counter[3:0] == 4'd0) // transition from 0 --> 9 (ex: 20-01 = 19)
-                            counter[3:0] <= 4'h9;
-                            counter[7:4] <= counter[7:4] - 4'h1;
+always_ff @(posedge CLOCK_50_I or negedge resetn) begin
+    if (resetn == 1'b0) begin
+        counter <= 8'h00;
+    end 
+    else begin
+        if (clock_1Hz_buf == 1'b0 && clock_1Hz == 1'b1) begin
+            if (stop_count == 1'b0) begin
 
-                        else counter[3:0] <= counter[3:0] - 4'h1;
-                
-                else begin              // 2nd digit
-        
-                    if (counter[7:4] <= 4'd5) 
-                       // UP
-                       if (direction == 1'b1)
-                        counter[3:0] <= 4'h0; 
-                        counter[7:4] <= counter[7:4] + 4'h1;
+                // COUNT UP: 00 -> 59
+                if (direction == 1'b1) begin
 
-                       // DOWN
-                       if (direction == 1'b0)
-                        counter[3:0] <= counter[3:0] - 4'h1;
-                    
-                    else counter[7:4] <= 4'h0;
+                    // Normal ones-digit increment
+                    if (counter[3:0] < 4'd9) begin
+                        counter[3:0] <= counter[3:0] + 4'd1;
+                    end
 
-                    //is this efficient? 
+                    // Ones digit is 9
+                    else begin
+                        counter[3:0] <= 4'd0;
+
+                        // 59 -> 00
+                        if (counter[7:4] == 4'd5) begin
+                            counter[7:4] <= 4'd0;
+                        end
+                        // 09 -> 10, 19 -> 20, etc.
+                        else begin
+                            counter[7:4] <= counter[7:4] + 4'd1;
+                        end
+                    end
                 end
 
-			end
-		end
-	end
+                // COUNT DOWN: 59 -> 00
+                else begin
+
+                    // Normal ones-digit decrement
+                    if (counter[3:0] > 4'd0) begin
+                        counter[3:0] <= counter[3:0] - 4'd1;
+                    end
+
+                    // Ones digit is 0
+                    else begin
+
+                        // 00 -> 59
+                        if (counter[7:4] == 4'd0) begin
+                            counter[7:4] <= 4'd5;
+                            counter[3:0] <= 4'd9;
+                        end
+                        // 20 -> 19, 10 -> 09, etc.
+                        else begin
+                            counter[7:4] <= counter[7:4] - 4'd1;
+                            counter[3:0] <= 4'd9;
+                        end
+                    end
+                end
+
+            end
+        end
+    end
 end

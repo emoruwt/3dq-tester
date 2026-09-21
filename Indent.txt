@@ -1,0 +1,40 @@
+// Counter is updated here
+always_ff @ (posedge CLOCK_50_I or negedge resetn) begin
+	if (resetn == 1'b0) begin
+		counter <= 8'h00;
+	end else begin
+		if (clock_1Hz_buf == 1'b0 && clock_1Hz == 1'b1) begin
+			if (stop_count == 1'b0) begin
+				
+                # Count FROM 0 -> 59
+                if (counter[3:0] < 4'd9) // 1st digit 
+                    if (direction == 1'b1) counter[3:0] <= counter[3:0] + 4'h1;
+                    
+                    if (direction == 1'b0) 
+                        if (counter[3:0] == 4'd0) // transition from 0 --> 9 (ex: 20-01 = 19)
+                            counter[3:0] <= 4'h9;
+                            counter[7:4] <= counter[7:4] - 4'h1;
+
+                        else counter[3:0] <= counter[3:0] - 4'h1;
+                
+                else begin              // 2nd digit
+        
+                    if (counter[7:4] <= 4'd5) 
+                       // UP
+                       if (direction == 1'b1)
+                        counter[3:0] <= 4'h0; 
+                        counter[7:4] <= counter[7:4] + 4'h1;
+
+                       // DOWN
+                       if (direction == 1'b0)
+                        counter[3:0] <= counter[3:0] - 4'h1;
+                    
+                    else counter[7:4] <= 4'h0;
+
+                    //is this efficient? 
+                end
+
+			end
+		end
+	end
+end

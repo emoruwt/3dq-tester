@@ -44,6 +44,8 @@ logic [3:0] led_green;
 logic [7:0] counter;
 logic stop_count;
 logic direction;
+logic dir_up;
+logic dir_down;
 logic load_req;
 
 logic [6:0] value_7_segment0, value_7_segment1;
@@ -144,69 +146,107 @@ always_ff @ (posedge CLOCK_50_I or negedge resetn) begin
 	if (resetn == 1'b0) begin
 		led_green <= 4'h0;
 		stop_count <= 1'b0;
+		//dir_up <= 1'b1; 
+		//dir_down <= 1'b1; 
 	end else begin
 		if (push_button_status_buf[0] == 1'b0 && push_button_status[0] == 1'b1) begin
-			//push button 0: stops count
+			//push button 0: stop
 			led_green[0] <= ~led_green[0];		
 			stop_count <= ~stop_count;
+			
 		end
 		if (push_button_status_buf[1] == 1'b0 && push_button_status[1] == 1'b1) 
-			//push button 1: sets the counter to count up
-			direction <= ~direction;
+			//push button 1: count up
+			dir_up <= 1'b0;
+			dir_down <= 1'b1;
 			led_green[1] <= ~led_green[1];
 					
 		if (push_button_status_buf[2] == 1'b0 && push_button_status[2] == 1'b1) 
-			//push button 2: sets the counter to count down
-			direction <= ~direction;
+			//push button 2: count down
+			dir_up <= 1'b1;
+			dir_down <= 1'b0;
 			led_green[2] <= ~led_green[2];
 
 		if (push_button_status_buf[3] == 1'b0 && push_button_status[3] == 1'b1) 
-			//push button 3: creates load request
+			//push button 3: load request
             load_req = 1'b1;
             led_green[3] <= ~led_green[3];		
 	end
 end
 
 // Counter is updated here
-always_ff @ (posedge CLOCK_50_I or negedge resetn) begin
-	if (resetn == 1'b0) begin
-		counter <= 8'h00;
-	end else begin
-		if (clock_1Hz_buf == 1'b0 && clock_1Hz == 1'b1) begin
-			if (stop_count == 1'b0) begin
-				
-                # Count FROM 0 -> 59
-                if (counter[3:0] < 4'd9) // 1st digit 
-                    if (direction == 1'b1) counter[3:0] <= counter[3:0] + 4'h1;
-                    
-                    if (direction == 1'b0) 
-                        if (counter[3:0] == 4'd0) // transition from 0 --> 9 (ex: 20-01 = 19)
-                            counter[3:0] <= 4'h9;
-                            counter[7:4] <= counter[7:4] - 4'h1;
+always_ff @(posedge CLOCK_50_I or negedge resetn) begin
+    if (resetn == 1'b0) begin
+        counter <= 8'h00;
 
-                        else counter[3:0] <= counter[3:0] - 4'h1;
-                
-                else begin              // 2nd digit
-        
-                    if (counter[7:4] <= 4'd5) 
-                       // UP
-                       if (direction == 1'b1)
-                        counter[3:0] <= 4'h0; 
-                        counter[7:4] <= counter[7:4] + 4'h1;
+		  
+    end 
+    else begin
+        if (clock_1Hz_buf == 1'b0 && clock_1Hz == 1'b1) begin
+            if (stop_count == 1'b0) begin
 
-                       // DOWN
-                       if (direction == 1'b0)
-                        counter[3:0] <= counter[3:0] - 4'h1;
-                    
-                    else counter[7:4] <= 4'h0;
+                // COUNT UP
+                if (dir_up == 1'b0) begin
 
-                    //is this efficient? 
+                    if (counter[3:0] < 4'd9) begin
+                        counter[3:0] <= counter[3:0] + 4'd1;
+                    end
+
+                    else begin
+                      
+                        // 59 -> 00
+                        if (counter[7:4] == 4'd5  && counter[3:0] == 4'd9) begin
+                            counter[7:0] <= 8'd0;
+                        end
+                        
+						// 19 -> 20
+                        else begin
+                            counter[7:4] <= counter[7:4] + 4'd1;
+                            counter[3:0] <= 4'd0;
+                        end
+                    end
                 end
 
-			end
-		end
-	end
+                // COUNT DOWN
+                if (dir_down == 1'b0 & dir_up == 1'b1) begin
+
+                    if (counter[3:0] > 4'd0) begin
+                        counter[3:0] <= counter[3:0] - 4'd1;
+                    end
+
+                    else begin
+
+                        // 00 -> 59
+                        if (counter[7:0] == 8'd0) begin
+                            counter[3:0] <= 4'd9;
+									 counter[7:4] <= 4'd5;
+                        end
+                        
+                        // 20 -> 19
+                        else begin
+                            counter[3:0] <= 4'd9;
+							counter[7:4] <= counter[7:4] - 4'd1;
+                        end
+                    end
+                end
+            end
+            
+            else begin 
+                // Push Button 3: Loading Value switches[0:7] 
+                // IF Condition: push hi AND (switches[7:4] is from 6 through F, OR when switches[3:0] is from A through F)
+                // Count Value [7:4] becomes switches[7:4] AND Count Value [3:0] becomes switches[3:0]
+                // tURN OFF led 8
+
+                //Implement remaining LED logic
+
+            end
+
+        end
+		  
+    end
 end
+
+
 
 // Instantiate modules for converting hex number to 7-bit value for the 7-segment display
 convert_hex_to_seven_segment unit0 (

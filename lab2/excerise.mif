@@ -1,0 +1,248 @@
+-- Your use of Intel Corporation's design tools, logic functions
+-- and other software and tools, and any partner logic
+-- functions, and any output files from any of the foregoing
+-- (including device programming or simulation files), and any
+-- associated documentation or information are expressly subject
+-- to the terms and conditions of the Intel Program License
+-- Subscription Agreement, the Intel Quartus Prime License Agreement,
+-- the Intel FPGA IP License Agreement, or other applicable license
+-- agreement, including, without limitation, that your use is for
+-- the sole purpose of programming logic devices manufactured by
+-- Intel and sold by Intel or its authorized distributors.
+-- Please refer to the applicable agreement for further details,
+-- at https://fpgasoftware.intel.com/eula.
+
+
+WIDTH=8;
+DEPTH=512;
+
+ADDRESS_RADIX=HEX;
+DATA_RADIX=HEX;
+
+CONTENT BEGIN
+
+	-- ============================================================
+	-- LOWER-CASE SECTION: 000h - 0FFh
+	-- ============================================================
+
+	[000..00D]  :   FF;
+	00E  :   60;
+	[00F..014]  :   FF;
+
+	015  :   71;  -- q
+	016  :   31;  -- 1
+
+	[017..019]  :   FF;
+
+	01A  :   7A;  -- z
+	01B  :   73;  -- s
+	01C  :   61;  -- a
+	01D  :   77;  -- w
+	01E  :   32;  -- 2
+
+	[01F..020]  :   FF;
+
+	021  :   63;  -- c
+	022  :   78;  -- x
+	023  :   64;  -- d
+	024  :   65;  -- e
+	025  :   34;  -- 4
+	026  :   33;  -- 3
+
+	[027..028]  :   FF;
+
+	029  :   20;  -- space
+	02A  :   76;  -- v
+	02B  :   66;  -- f
+	02C  :   74;  -- t
+	02D  :   72;  -- r
+	02E  :   35;  -- 5
+
+	[02F..030]  :   FF;
+
+	031  :   6E;  -- n
+	032  :   62;  -- b
+	033  :   68;  -- h
+	034  :   67;  -- g
+	035  :   79;  -- y
+	036  :   36;  -- 6
+
+	[037..039]  :   FF;
+
+	03A  :   6D;  -- m
+	03B  :   6A;  -- j
+	03C  :   75;  -- u
+	03D  :   37;  -- 7
+	03E  :   38;  -- 8
+
+	[03F..040]  :   FF;
+
+	041  :   2C;
+	042  :   6B;  -- k
+	043  :   69;  -- i
+	044  :   6F;  -- o
+	045  :   30;  -- 0
+	046  :   39;  -- 9
+
+	[047..048]  :   FF;
+
+	049  :   2E;
+	04A  :   2F;
+	04B  :   6C;  -- l
+	04C  :   3B;
+	04D  :   70;  -- p
+	04E  :   2D;
+
+	[04F..051]  :   FF;
+
+	052  :   27;
+	053  :   FF;
+	054  :   5B;
+	055  :   3D;
+
+	[056..05A]  :   FF;
+
+	05B  :   5D;
+
+	[05C..068]  :   FF;
+
+	069  :   31;
+	06A  :   FF;
+	06B  :   34;
+	06C  :   37;
+
+	[06D..06F]  :   FF;
+
+	070  :   30;
+	071  :   2E;
+	072  :   32;
+	073  :   35;
+	074  :   36;
+	075  :   38;
+
+	[076..078]  :   FF;
+
+	079  :   2B;
+	07A  :   33;
+	07B  :   2D;
+	07C  :   2A;
+	07D  :   39;
+
+	[07E..0FF]  :   FF;
+
+
+	-- ============================================================
+	-- UPPER-CASE SECTION: 100h - 1FFh
+	-- ============================================================
+	-- Same PS/2 make codes, but address MSB = 1
+	-- Letters use upper-case LCD codes.
+	-- Digits remain unchanged.
+	-- ============================================================
+
+	[100..10D]  :   FF;
+	10E  :   60;
+
+	[10F..114]  :   FF;
+
+	115  :   51;  -- Q
+	116  :   31;  -- 1
+
+	[117..119]  :   FF;
+
+	11A  :   5A;  -- Z
+	11B  :   53;  -- S
+	11C  :   41;  -- A
+	11D  :   57;  -- W
+	11E  :   32;  -- 2
+
+	[11F..120]  :   FF;
+
+	121  :   43;  -- C
+	122  :   58;  -- X
+	123  :   44;  -- D
+	124  :   45;  -- E
+	125  :   34;  -- 4
+	126  :   33;  -- 3
+
+	[127..128]  :   FF;
+
+	129  :   20;  -- space
+	12A  :   56;  -- V
+	12B  :   46;  -- F
+	12C  :   54;  -- T
+	12D  :   52;  -- R
+	12E  :   35;  -- 5
+
+	[12F..130]  :   FF;
+
+	131  :   4E;  -- N
+	132  :   42;  -- B
+	133  :   48;  -- H
+	134  :   47;  -- G
+	135  :   59;  -- Y
+	136  :   36;  -- 6
+
+	[137..139]  :   FF;
+
+	13A  :   4D;  -- M
+	13B  :   4A;  -- J
+	13C  :   55;  -- U
+	13D  :   37;  -- 7
+	13E  :   38;  -- 8
+
+	[13F..140]  :   FF;
+
+	141  :   2C;
+	142  :   4B;  -- K
+	143  :   49;  -- I
+	144  :   4F;  -- O
+	145  :   30;  -- 0
+	146  :   39;  -- 9
+
+	[147..148]  :   FF;
+
+	149  :   2E;
+	14A  :   2F;
+	14B  :   4C;  -- L
+	14C  :   3B;
+	14D  :   50;  -- P
+	14E  :   2D;
+
+	[14F..151]  :   FF;
+
+	152  :   27;
+	153  :   FF;
+	154  :   5B;
+	155  :   3D;
+
+	[156..15A]  :   FF;
+
+	15B  :   5D;
+
+	[15C..168]  :   FF;
+
+	169  :   31;
+	16A  :   FF;
+	16B  :   34;
+	16C  :   37;
+
+	[16D..16F]  :   FF;
+
+	170  :   30;
+	171  :   2E;
+	172  :   32;
+	173  :   35;
+	174  :   36;
+	175  :   38;
+
+	[176..178]  :   FF;
+
+	179  :   2B;
+	17A  :   33;
+	17B  :   2D;
+	17C  :   2A;
+	17D  :   39;
+
+	[17E..1FF]  :   FF;
+
+END;

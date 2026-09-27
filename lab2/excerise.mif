@@ -28,7 +28,7 @@ CONTENT BEGIN
 	[000..00D]  :   FF;
 	00E  :   60;
 	[00F..014]  :   FF;
-
+   -- left shift 12 right shift 59 for ps2 
 	015  :   71;  -- q
 	016  :   31;  -- 1
 
@@ -51,7 +51,7 @@ CONTENT BEGIN
 
 	[027..028]  :   FF;
 
-	029  :   20;  -- space
+	029  :   20;  -- SPACEEE
 	02A  :   76;  -- v
 	02B  :   66;  -- f
 	02C  :   74;  -- t

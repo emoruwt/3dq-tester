@@ -1,0 +1,552 @@
+/*
+Copyright by Henry Ko and Nicola Nicolici
+Department of Electrical and Computer Engineering
+McMaster University
+Ontario, Canada
+*/
+
+`timescale 1ns/100ps
+`ifndef DISABLE_DEFAULT_NET
+`default_nettype none
+`endif
+
+// This is the top module
+// It connects the PS2 controller and the LCD controller
+// It first stores the typed keys onto 4 data registers
+// When the data registers are full, it will update the LCD with the 4 new characters
+module experiment5 (
+		/////// board clocks                      ////////////
+		input logic CLOCK_50_I,                   // 50 MHz clock
+
+		/////// switches                          ////////////
+		input logic[17:0] SWITCH_I,               // toggle switches
+
+		/////// 7 segment displays/LEDs           ////////////
+		output logic[6:0] SEVEN_SEGMENT_N_O[7:0], // 8 seven segment displays
+		output logic[8:0] LED_GREEN_O,            // 9 green LEDs
+		output logic[17:0] LED_RED_O,             // 18 red LEDs
+		
+		/////// PS2                               ////////////
+		input logic PS2_DATA_I,                   // PS2 data
+		input logic PS2_CLOCK_I,                  // PS2 clock
+
+		/////// LCD display                       ////////////
+		output logic LCD_POWER_O,                 // LCD power ON/OFF
+		output logic LCD_BACK_LIGHT_O,            // LCD back light ON/OFF
+		output logic LCD_READ_WRITE_O,            // LCD read/write select, 0 = Write, 1 = Read
+		output logic LCD_EN_O,                    // LCD enable
+		output logic LCD_COMMAND_DATA_O,          // LCD command/data select, 0 = Command, 1 = Data
+		output [7:0] LCD_DATA_IO                  // LCD data bus 8 bits
+);
+
+parameter MAX_LCD_delay_count = 18'h3FFFF;
+
+logic resetn;
+
+enum logic [3:0] {
+	S_LCD_INIT,
+	S_LCD_INIT_WAIT,
+	S_IDLE,
+	S_LCD_WAIT_ROM_UPDATE,
+	S_LCD_ISSUE_INSTRUCTION,
+	S_LCD_FINISH_INSTRUCTION,
+	S_LCD_ISSUE_CHANGE_LINE,
+	S_LCD_FINISH_CHANGE_LINE
+} state;
+
+logic [3:0] data_counter; // change this to 4 bits 
+
+logic [7:0] data_reg [15:0]; // change this to 16 data reg 
+logic case_mode [15:0]; // change this to 16 data reg 
+
+
+logic [7:0] PS2_code;
+logic PS2_code_ready, PS2_code_ready_buf;
+logic PS2_make_code;
+
+logic [2:0] LCD_init_index;
+logic [8:0] LCD_init_sequence;
+logic [8:0] LCD_instruction; 
+
+logic [7:0] LCD_code;
+logic [3:0] LCD_position;
+logic LCD_line;
+
+logic LCD_start;
+logic LCD_done;
+logic case_mode_val;
+
+
+// Pair Tracking
+logic reg_count;
+logic pair_count;
+logic [7:0] LCD_prev;
+logic [7:0] LCD_cur;
+
+logic flag_15;
+logic flag_14;
+
+
+
+//assign previous_alp = ((LCD_code >= 60) && (LCD_code <= 7A) || (LCD_code >= 41) && (LCD_code <= 5A)); 
+//assign next_alp = ((LCD_code >= 60) && (LCD_code <= 7A) || (LCD_code >= 41) && (LCD_code <= 5A)); 
+
+//assign previous_num = ((LCD_code >= 30) && (LCD_code <= 39); 
+//assign next_num = ((LCD_code >= 30) && (LCD_code <= 39); 
+
+
+logic [6:0] value_7_segment[2:0];
+
+
+//if case_mode = 0 then lower case aka right shift key make_code 12
+// if case_mode = 1 then upper case aka left shift key make_code 59
+
+assign resetn = ~SWITCH_I[17];
+
+// PS2 unit
+PS2_controller PS2_unit (
+	.Clock_50(CLOCK_50_I),
+	.Resetn(resetn),
+	
+	.PS2_clock(PS2_CLOCK_I),
+	.PS2_data(PS2_DATA_I),
+	
+	.PS2_code(PS2_code),
+	.PS2_code_ready(PS2_code_ready),
+	.PS2_make_code(PS2_make_code)
+);
+
+// ROM for translate PS2 code to LCD code
+PS2_to_LCD_ROM	PS2_to_LCD_ROM_inst (
+	.address ( {case_mode[15], data_reg[15]} ), //changed 1'b0 bc i want the case mode to change the msb of the address
+	.clock ( CLOCK_50_I ),
+	.q ( LCD_code )
+	);
+
+// LCD unit
+LCD_controller #( 
+	.MAX_LCD_delay_count(MAX_LCD_delay_count-1)) 
+	LCD_unit (
+	.Clock_50(CLOCK_50_I),
+	.Resetn(resetn),
+	.LCD_start(LCD_start),
+	.LCD_instruction(LCD_instruction),
+	.LCD_done(LCD_done),
+	
+	// LCD side
+	.LCD_power(LCD_POWER_O),
+	.LCD_back_light(LCD_BACK_LIGHT_O),
+	.LCD_read_write(LCD_READ_WRITE_O),
+	.LCD_enable(LCD_EN_O),
+	.LCD_command_data_select(LCD_COMMAND_DATA_O),
+	.LCD_data_io(LCD_DATA_IO)
+);
+
+always_ff @ (posedge CLOCK_50_I or negedge resetn) begin
+	if (resetn == 1'b0) begin
+		state <= S_LCD_INIT;
+		LCD_init_index <= 3'd0;
+		LCD_start <= 1'b0;
+		LCD_instruction <= 9'd0;
+		LCD_line <= 1'b0;
+		PS2_code_ready_buf <= 1'b0;
+		LCD_position <= 4'h0;
+		data_counter <= 4'd0; // 4 regs therefore 16 regs 2^4 bits = 4 bits 
+		case_mode_val <= 1'b0; // case_mode
+		
+		//add additional 12 registers! 
+		data_reg[15] <= 8'h00;
+		data_reg[14] <= 8'h00;
+		data_reg[13] <= 8'h00;		
+		data_reg[12] <= 8'h00;
+		data_reg[11] <= 8'h00;
+		data_reg[10] <= 8'h00;
+		data_reg[9] <= 8'h00;
+		data_reg[8] <= 8'h00;
+		data_reg[7] <= 8'h00;
+		data_reg[6] <= 8'h00;
+		data_reg[5] <= 8'h00;
+		data_reg[4] <= 8'h00;
+		data_reg[3] <= 8'h00;
+		data_reg[2] <= 8'h00;
+		data_reg[1] <= 8'h00;
+		data_reg[0] <= 8'h00;		
+		
+		case_mode[15] <= 1'h0;
+		case_mode[14] <= 1'h0;
+		case_mode[13] <= 1'h0;		
+		case_mode[12] <= 1'h0;
+		case_mode[11] <= 1'h0;
+		case_mode[10] <= 1'h0;
+		case_mode[9] <= 1'h0;
+		case_mode[8] <= 1'h0;
+		case_mode[7] <= 1'h0;
+		case_mode[6] <= 1'h0;
+		case_mode[5] <= 1'h0;
+		case_mode[4] <= 1'h0;
+		case_mode[3] <= 1'h0;
+		case_mode[2] <= 1'h0;
+		case_mode[1] <= 1'h0;
+		case_mode[0] <= 1'h0;
+		
+	end else begin
+		PS2_code_ready_buf <= PS2_code_ready;		
+
+		case (state)
+		S_LCD_INIT: begin
+			// Initialize LCD
+			///////////////////
+			// DO NOT CHANGE //
+			///////////////////
+			LCD_instruction <= LCD_init_sequence;
+			LCD_start <= 1'b1;
+			state <= S_LCD_INIT_WAIT;
+		end
+		S_LCD_INIT_WAIT: begin
+			///////////////////
+			// DO NOT CHANGE //
+			///////////////////
+			if (LCD_start == 1'b1) begin
+				LCD_start <= 1'b0;
+			end else begin
+				if (LCD_done == 1'b1) begin
+					LCD_init_index <= LCD_init_index + 3'd1;
+					if (LCD_init_index < 3'd4) 
+						state <= S_LCD_INIT;
+					else begin
+						// Finish initializing LCD
+						state <= S_IDLE;
+						LCD_position <= 4'h0;
+					end
+				end
+			end
+		end
+		S_IDLE: begin
+			// Scan code is detected
+			if (PS2_code_ready && ~PS2_code_ready_buf && PS2_make_code == 1'b1) begin
+				
+				if(PS2_code == 8'h59) begin 
+					case_mode_val <= 1'b0; 
+					
+				end
+			
+				else if(PS2_code == 8'h12) begin
+					case_mode_val <= 1'b1;
+					
+				end
+					
+			
+				else begin
+			
+					if (data_counter < 4'd15) begin
+						data_counter <= data_counter + 4'd1;
+					end else begin
+							// Send the 4 data to LCD 
+						data_counter <= 4'd0;
+						state <= S_LCD_WAIT_ROM_UPDATE;
+					end
+						
+
+//if case_mode = 0 then lower case aka right shift key make_code 59
+// if case_mode = 1 then upper case aka left shift key make_code 12		
+				// Load the PS2 code to shift registers
+				
+				// append register transfer for all 16 regs 
+					if (flag_14 == 1 || flag_15 == 0) pair_count <= pair_count + 1; 
+
+
+					data_reg[15] <= data_reg[14];
+					data_reg[14] <= data_reg[13];
+					data_reg[13] <= data_reg[12];
+					data_reg[12] <= data_reg[11];
+					data_reg[11] <= data_reg[10];
+					data_reg[10] <= data_reg[9];
+					data_reg[9] <= data_reg[8];
+					data_reg[8] <= data_reg[7];
+					data_reg[7] <= data_reg[6];
+					data_reg[6] <= data_reg[5];
+					data_reg[5] <= data_reg[4];
+					data_reg[4] <= data_reg[3];
+					data_reg[3] <= data_reg[2];
+					data_reg[2] <= data_reg[1];
+					data_reg[1] <= data_reg[0];
+					data_reg[0] <= PS2_code;
+					
+					case_mode[15] <= case_mode[14];
+					case_mode[14] <= case_mode[13];
+					case_mode[13] <= case_mode[12];
+					case_mode[12] <= case_mode[11];
+					case_mode[11] <= case_mode[10];
+					case_mode[10] <= case_mode[9];
+					case_mode[9] <= case_mode[8];
+					case_mode[8] <= case_mode[7];
+					case_mode[7] <= case_mode[6];
+					case_mode[6] <= case_mode[5];
+					case_mode[5] <= case_mode[4];
+					case_mode[4] <= case_mode[3];
+					case_mode[3] <= case_mode[2];
+					case_mode[2] <= case_mode[1];
+					case_mode[1] <= case_mode[0];
+					case_mode[0] <= case_mode_val;	
+					
+					
+					
+				end
+			end
+		end
+		
+		S_LCD_WAIT_ROM_UPDATE: begin
+			// One clock cycle to wait for ROM to update its output
+			state <= S_LCD_ISSUE_INSTRUCTION;
+		end
+		S_LCD_ISSUE_INSTRUCTION: begin
+			// Load translated LCD code to LCD instruction from the ROM
+			LCD_instruction <= {1'b1, LCD_code};
+			LCD_start <= 1'b1;
+			state <= S_LCD_FINISH_INSTRUCTION;
+		end
+		S_LCD_FINISH_INSTRUCTION: begin
+			if (LCD_start == 1'b1) begin
+				LCD_start <= 1'b0;
+			end else begin	
+				if (LCD_done == 1'b1) begin			
+					if (LCD_position < 4'd15) begin
+						LCD_position <= LCD_position + 4'h1;
+						if (data_counter < 4'd15) begin
+							data_counter <= data_counter + 4'd1;
+
+							state <= S_LCD_WAIT_ROM_UPDATE;
+						end else begin
+							data_counter <= 4'd0;						
+
+							state <= S_IDLE;
+						end
+					end else begin
+						// Need to change to line 2 for LCD
+						LCD_position <= 4'h0;
+						state <= S_LCD_ISSUE_CHANGE_LINE;
+					end
+					
+					
+					//for lcd_position top line
+					
+					// for lcd_position + 4h'1 == (60 =< lcd_code =< 7A | 41 =< lcd_code =< 5A)  && lcd_position + 4h'1 == (30 =< lcd_code =< 39) 
+						//pair_counter <= pair_counter+1
+						//value_7_segment[1] = pair_count value
+					
+				
+					//TOP LINE 
+					
+					
+					if (flag_14 == 1 || flag_15 == 0) pair_count <= pair_count + 1; 
+						
+	 	
+		
+		
+					data_reg[15] <= data_reg[14];
+					data_reg[14] <= data_reg[13];
+					data_reg[13] <= data_reg[12];
+					data_reg[12] <= data_reg[11];
+					data_reg[11] <= data_reg[10];
+					data_reg[10] <= data_reg[9];
+					data_reg[9] <= data_reg[8];
+					data_reg[8] <= data_reg[7];
+					data_reg[7] <= data_reg[6];
+					data_reg[6] <= data_reg[5];
+					data_reg[5] <= data_reg[4];
+					data_reg[4] <= data_reg[3];
+					data_reg[3] <= data_reg[2];
+					data_reg[2] <= data_reg[1];
+					data_reg[1] <= data_reg[0];
+					data_reg[0] <= 8'h00;					
+					
+					
+					case_mode[15] <= case_mode[14];
+					case_mode[14] <= case_mode[13];
+					case_mode[13] <= case_mode[12];
+					case_mode[12] <= case_mode[11];
+					case_mode[11] <= case_mode[10];
+					case_mode[10] <= case_mode[9];
+					case_mode[9] <= case_mode[8];
+					case_mode[8] <= case_mode[7];
+					case_mode[7] <= case_mode[6];
+					case_mode[6] <= case_mode[5];
+					case_mode[5] <= case_mode[4];
+					case_mode[4] <= case_mode[3];
+					case_mode[3] <= case_mode[2];
+					case_mode[2] <= case_mode[1];
+					case_mode[1] <= case_mode[0];
+					case_mode[0] <= 1'b0;	
+				end
+			end
+		end
+		S_LCD_ISSUE_CHANGE_LINE: begin
+			// Change line
+			LCD_instruction <= {2'b01, ~LCD_line, 6'h00};
+			LCD_line <= ~LCD_line;
+			LCD_start <= 1'b1;
+			state <= S_LCD_FINISH_CHANGE_LINE;
+		end
+		S_LCD_FINISH_CHANGE_LINE: begin
+			if (LCD_start == 1'b1) begin
+				LCD_start <= 1'b0;
+			end else begin	
+				if (LCD_done == 1'b1) begin	
+					if (data_counter < 4'd15) begin
+						data_counter <= data_counter + 4'd1;
+							
+						state <= S_LCD_WAIT_ROM_UPDATE;
+					end else begin
+						// finish displaying
+						data_counter <= 4'd0;
+						
+						state <= S_IDLE;
+					end
+				end
+			end
+		end
+		default: state <= S_LCD_INIT;
+		endcase
+	end
+end
+
+// Initialization sequence for LCD
+///////////////////
+// DO NOT CHANGE //
+///////////////////
+always_comb begin
+	flag_14 = 1'b0;
+	
+	case(data_reg[14])
+		8'h16: flag_14 = 1'b1;
+		8'h1E: flag_14 = 1'b1;
+		8'h26: flag_14 = 1'b1;
+		8'h25: flag_14 = 1'b1;
+		8'h2E: flag_14 = 1'b1;
+		8'h36: flag_14 = 1'b1;
+		8'h3D: flag_14 = 1'b1;
+		8'h3E: flag_14 = 1'b1;
+		8'h46: flag_14 = 1'b1;
+		8'h45: flag_14 = 1'b1;
+
+		8'h1C: flag_14 = 1'b0;
+		8'h1B: flag_14 = 1'b0;
+		8'h23: flag_14 = 1'b0;
+		8'h2B: flag_14 = 1'b0;
+		8'h34: flag_14 = 1'b0;
+		8'h33: flag_14 = 1'b0;
+		8'h3B: flag_14 = 1'b0;
+		8'h42: flag_14 = 1'b0;
+		8'h4B: flag_14 = 1'b0;
+		8'h1A: flag_14 = 1'b0;
+		8'h22: flag_14 = 1'b0;
+		8'h15: flag_14 = 1'b0;
+		8'h1D: flag_14 = 1'b0;
+		8'h24: flag_14 = 1'b0;
+		8'h25: flag_14 = 1'b0;
+		8'h2C: flag_14 = 1'b0;
+		8'h35: flag_14 = 1'b0;
+		8'h3C: flag_14 = 1'b0;
+		8'h43: flag_14 = 1'b0;
+		8'h44: flag_14 = 1'b0;
+		8'h4D: flag_14 = 1'b0;
+		8'h21: flag_14 = 1'b0;
+		8'h2A: flag_14 = 1'b0;
+		8'h32: flag_14 = 1'b0;
+		8'h31: flag_14 = 1'b0;
+		8'h3A: flag_14 = 1'b0;
+
+//	default: flag_14 = 1'b0;
+
+	endcase
+end
+
+
+always_comb begin
+	flag_15 = 1'b0;
+	
+	case(data_reg[15])
+	8'h16: flag_15 = 1'b1;
+	8'h1E: flag_15 = 1'b1;
+	8'h26: flag_15 = 1'b1;
+	8'h25: flag_15 = 1'b1;
+	8'h2E: flag_15 = 1'b1;
+	8'h36: flag_15 = 1'b1;
+	8'h3D: flag_15 = 1'b1;
+	8'h3E: flag_15 = 1'b1;
+	8'h46: flag_15 = 1'b1;
+	8'h45: flag_15 = 1'b1;
+
+	8'h1C: flag_15 = 1'b0;
+	8'h1B: flag_15 = 1'b0;
+	8'h23: flag_15 = 1'b0;
+	8'h2B: flag_15 = 1'b0;
+	8'h34: flag_15 = 1'b0;
+	8'h33: flag_15 = 1'b0;
+	8'h3B: flag_15 = 1'b0;
+	8'h42: flag_15 = 1'b0;
+	8'h4B: flag_15 = 1'b0;
+	8'h1A: flag_15 = 1'b0;
+	8'h22: flag_15 = 1'b0;
+	8'h15: flag_15 = 1'b0;
+	8'h1D: flag_15 = 1'b0;
+	8'h24: flag_15 = 1'b0;
+	8'h25: flag_15 = 1'b0;
+	8'h2C: flag_15 = 1'b0;
+	8'h35: flag_15 = 1'b0;
+	8'h3C: flag_15 = 1'b0;
+	8'h43: flag_15 = 1'b0;
+	8'h44: flag_15 = 1'b0;
+	8'h4D: flag_15 = 1'b0;
+	8'h21: flag_15 = 1'b0;
+	8'h2A: flag_15 = 1'b0;
+	8'h32: flag_15 = 1'b0;
+	8'h31: flag_15 = 1'b0;
+	8'h3A: flag_15 = 1'b0;
+
+//	default: flag_15 = 1'b0;
+
+	endcase
+end
+
+always_comb begin
+
+	case(LCD_init_index)
+	0:       LCD_init_sequence	=	9'h038; // Set display to be 8 bit and 2 lines
+	1:       LCD_init_sequence	=	9'h00C; // Set display
+	2:       LCD_init_sequence	=	9'h001; // Clear display
+	3:       LCD_init_sequence	=	9'h006; // Enter entry mode
+	default: LCD_init_sequence	=	9'h080; // Set starting position to 0
+	endcase
+end
+
+
+assign LED_GREEN_O = LCD_instruction;
+assign LED_RED_O = {resetn, ~flag_15, ~flag_14, 14'd0, PS2_make_code};
+
+convert_hex_to_seven_segment unit2 (
+	.hex_value({2'b00, data_counter}), 
+	.converted_value(value_7_segment[2])
+);
+
+convert_hex_to_seven_segment unit1 (
+	.hex_value(PS2_code[7:4]), 
+	.converted_value(value_7_segment[1])
+);
+
+convert_hex_to_seven_segment unit0 (
+	.hex_value(pair_count), 
+	.converted_value(value_7_segment[0])
+);
+
+
+assign	SEVEN_SEGMENT_N_O[0] = value_7_segment[0],
+		SEVEN_SEGMENT_N_O[1] = value_7_segment[1],
+		SEVEN_SEGMENT_N_O[2] = 7'h7f,
+		SEVEN_SEGMENT_N_O[3] = 7'h7f,
+		SEVEN_SEGMENT_N_O[4] = value_7_segment[2],
+		SEVEN_SEGMENT_N_O[5] = 7'h7f,
+		SEVEN_SEGMENT_N_O[6] = 7'h7f,
+		SEVEN_SEGMENT_N_O[7] = 7'h7f;
+		
+endmodule

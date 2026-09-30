@@ -1,0 +1,202 @@
+-- Your use of Intel Corporation's design tools, logic functions
+-- and other software and tools, and any partner logic
+-- functions, and any output files from any of the foregoing
+-- (including device programming or simulation files), and any
+-- associated documentation or information are expressly subject
+-- to the terms and conditions of the Intel Program License
+-- Subscription Agreement, the Intel Quartus Prime License Agreement,
+-- the Intel FPGA IP License Agreement, or other applicable license
+-- agreement, including, without limitation, that your use is for
+-- the sole purpose of programming logic devices manufactured by
+-- Intel and sold by Intel or its authorized distributors.
+-- Please refer to the applicable agreement for further details,
+-- at https://fpgasoftware.intel.com/eula.
+
+
+WIDTH=8;
+DEPTH=512;
+
+ADDRESS_RADIX=HEX;
+DATA_RADIX=HEX;
+
+CONTENT BEGIN
+
+	-- LOWER-CASE SECTION: 000h - 0FFh
+
+	[000..014]  :   20;
+
+	015  :   71;  -- q
+	016  :   31;  -- 1
+
+	[017..019]  :   20;
+
+	01A  :   7A;  -- z
+	01B  :   73;  -- s
+	01C  :   61;  -- a
+	01D  :   77;  -- w
+	01E  :   32;  -- 2
+
+	[01F..020]  :   20;
+
+	021  :   63;  -- c
+	022  :   78;  -- x
+	023  :   64;  -- d
+	024  :   65;  -- e
+	025  :   34;  -- 4
+	026  :   33;  -- 3
+
+	[027..029]  :   20; 
+
+	02A  :   76;  -- v
+	02B  :   66;  -- f
+	02C  :   74;  -- t
+	02D  :   72;  -- r
+	02E  :   35;  -- 5
+
+	[02F..030]  :   20;
+
+	031  :   6E;  -- n
+	032  :   62;  -- b
+	033  :   68;  -- h
+	034  :   67;  -- g
+	035  :   79;  -- y
+	036  :   36;  -- 6
+
+	[037..039]  :   20;
+
+	03A  :   6D;  -- m
+	03B  :   6A;  -- j
+	03C  :   75;  -- u
+	03D  :   37;  -- 7
+	03E  :   38;  -- 8
+
+	[03F..041]  :   20; 
+
+	042  :   6B;  -- k
+	043  :   69;  -- i
+	044  :   6F;  -- o
+	045  :   30;  -- 0
+	046  :   39;  -- 9
+
+	[047..04A]  :   20; 
+
+	04B  :   6C;  -- l
+	04C  :   20;  
+	04D  :   70;  -- p
+	04E  :   20;  -- 
+
+	[04F..068]  :   20;
+
+	069  :   31;  -- 1
+	06A  :   20;
+	06B  :   34;  -- 4
+	06C  :   37;  -- 7
+
+	[06D..06F]  :   20;
+
+	070  :   30;  -- 0
+	071  :   20;  
+	072  :   32;  -- 2
+	073  :   35;  -- 5
+	074  :   36;  -- 6
+	075  :   38;  -- 8
+
+	[076..079]  :   20; 
+	07A  :   33;  -- 3
+	07B  :   20;  
+	07C  :   20;  
+	07D  :   39;  -- 9
+
+	[07E..0FF]  :   20;
+
+	-- UPPER-CASE SECTION: 100h - 1FFh
+
+	[100..114]  :   20;
+
+	115  :   51;  -- Q
+	116  :   31;  -- 1
+
+	[117..119]  :   20;
+
+	11A  :   5A;  -- Z
+	11B  :   53;  -- S
+	11C  :   41;  -- A
+	11D  :   57;  -- W
+	11E  :   32;  -- 2
+
+	[11F..120]  :   20;
+
+	121  :   43;  -- C
+	122  :   58;  -- X
+	123  :   44;  -- D
+	124  :   45;  -- E
+	125  :   34;  -- 4
+	126  :   33;  -- 3
+
+	[127..129]  :   20; 
+
+	12A  :   56;  -- V
+	12B  :   46;  -- F
+	12C  :   54;  -- T
+	12D  :   52;  -- R
+	12E  :   35;  -- 5
+
+	[12F..130]  :   20;
+
+	131  :   4E;  -- N
+	132  :   42;  -- B
+	133  :   48;  -- H
+	134  :   47;  -- G
+	135  :   59;  -- Y
+	136  :   36;  -- 6
+
+	[137..139]  :   20;
+
+	13A  :   4D;  -- M
+	13B  :   4A;  -- J
+	13C  :   55;  -- U
+	13D  :   37;  -- 7
+	13E  :   38;  -- 8
+
+	[13F..141]  :   20; 
+
+	142  :   4B;  -- K
+	143  :   49;  -- I
+	144  :   4F;  -- O
+	145  :   30;  -- 0
+	146  :   39;  -- 9
+
+	[147..14A]  :   20; 
+
+	14B  :   4C;  -- L
+	14C  :   20;  -- space
+	14D  :   50;  -- P
+	14E  :   20;  -- space
+
+	[14F..168]  :   20;
+
+	-- Numeric keypad digits
+	169  :   31;  -- 1
+	16A  :   20;
+	16B  :   34;  -- 4
+	16C  :   37;  -- 7
+
+	[16D..16F]  :   20;
+
+	170  :   30;  -- 0
+	171  :   20;  -- space
+	172  :   32;  -- 2
+	173  :   35;  -- 5
+	174  :   36;  -- 6
+	175  :   38;  -- 8
+
+	[176..179]  :   20;
+
+	17A  :   33;  -- 3
+	17B  :   20;  -- space
+	17C  :   20;  -- space
+	17D  :   39;  -- 9
+
+	[17E..1FF]  :   20;
+
+END;

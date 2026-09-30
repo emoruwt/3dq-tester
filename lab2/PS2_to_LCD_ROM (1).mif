@@ -20,11 +20,12 @@ ADDRESS_RADIX=HEX;
 DATA_RADIX=HEX;
 
 CONTENT BEGIN
-
+	-- all non alphabet or digit count as space(20)
 	-- LOWER-CASE SECTION: 000h - 0FFh
 
 	[000..014]  :   20;
-
+   	-- left shift 12 right shift 59 for ps2 
+	--(mapped to 20 but never gets displayed as space)
 	015  :   71;  -- q
 	016  :   31;  -- 1
 
@@ -109,6 +110,7 @@ CONTENT BEGIN
 
 	[07E..0FF]  :   20;
 
+
 	-- UPPER-CASE SECTION: 100h - 1FFh
 
 	[100..114]  :   20;
@@ -151,7 +153,6 @@ CONTENT BEGIN
 	136  :   36;  -- 6
 
 	[137..139]  :   20;
-
 	13A  :   4D;  -- M
 	13B  :   4A;  -- J
 	13C  :   55;  -- U
@@ -174,8 +175,6 @@ CONTENT BEGIN
 	14E  :   20;  -- space
 
 	[14F..168]  :   20;
-
-	-- Numeric keypad digits
 	169  :   31;  -- 1
 	16A  :   20;
 	16B  :   34;  -- 4

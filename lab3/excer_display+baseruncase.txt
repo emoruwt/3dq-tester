@@ -72,7 +72,7 @@ logic [3:0] FWD_counter [1:0];
 logic [3:0] REV_counter [1:0];
 logic [3:0] RUN_counter [1:0]; 
 
-logic [3:0] data_reg [7:0]; //register storing differnet states
+logic [7:0] data_reg [3:0]; //register storing differnet states
 
 // PS/2 controller
 PS2_controller ps2_unit (
@@ -90,12 +90,48 @@ always_ff @ (posedge CLOCK_50_I or negedge resetn) begin
 	if (resetn == 1'b0) begin
 		PS2_code_ready_buf <= 1'b0;
 		PS2_reg <= 8'd0;
+		RUN_counter[1] <= 4'h0; 
+		RUN_counter[0] <= 4'h0;
+		
+		FWD_counter[1] <= 4'h0;
+		FWD_counter[0] <= 4'h0;
+
+		REV_counter[1] <= 4'h0; 
+		REV_counter[0] <= 4'h0; 
+		
+		
 	end else begin
 		PS2_code_ready_buf <= PS2_code_ready;
 		if (PS2_code_ready && ~PS2_code_ready_buf && PS2_make_code) begin
 			// scan code detected
 			PS2_reg <= PS2_code;
 		end
+		
+	//implement here 	
+		
+		if(PS2_code == 8'h29) begin 
+			if(RUN_counter[1] == 4'b1001 && RUN_counter[0] == 4'b1001) begin 
+				RUN_counter[1] <= 4'h0; 
+				RUN_counter[0] <= 4'h0; 
+				
+			end else if(RUN_counter[0] == 4'b1001) begin
+				RUN_counter[1] <= RUN_counter[1] + 1'b1; 
+				RUN_counter[0] <= 4'h0; 
+			
+			end else begin 
+			RUN_counter[0] <= RUN_counter[0] + 1'b1; 
+			end
+			
+		FWD_counter[1] <= 4'h0;
+		FWD_counter[0] <= 4'h0;
+		REV_counter[1] <= 4'h0; 
+		REV_counter[0] <= 4'h0; 
+		
+		end
+	
+	
+	
+	
 	end
 end
 

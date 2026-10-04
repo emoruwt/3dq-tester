@@ -104,34 +104,44 @@ always_ff @ (posedge CLOCK_50_I or negedge resetn) begin
 		PS2_code_ready_buf <= PS2_code_ready;
 		if (PS2_code_ready && ~PS2_code_ready_buf && PS2_make_code) begin
 			// scan code detected
-			PS2_reg <= PS2_code;
-		end
-		
-	//implement here 	
-		
-		if(PS2_code == 8'h29) begin 
-			if(RUN_counter[1] == 4'b1001 && RUN_counter[0] == 4'b1001) begin 
-				RUN_counter[1] <= 4'h0; 
-				RUN_counter[0] <= 4'h0; 
+			PS2_reg <= PS2_code;		
+			if(PS2_code == 8'h29) begin 
+				if(RUN_counter[1] == 4'b1001 && RUN_counter[0] == 4'b1001) begin 
+					RUN_counter[1] <= 4'h0; 
+					RUN_counter[0] <= 4'h0; 
+					
+				end else if(RUN_counter[0] == 4'b1001) begin
+					RUN_counter[1] <= RUN_counter[1] + 1'b1; 
+					RUN_counter[0] <= 4'h0; 
 				
-			end else if(RUN_counter[0] == 4'b1001) begin
-				RUN_counter[1] <= RUN_counter[1] + 1'b1; 
-				RUN_counter[0] <= 4'h0; 
+				end else begin 
+				RUN_counter[0] <= RUN_counter[0] + 1'b1; 
+				end
+				
+			FWD_counter[1] <= 4'h0;
+			FWD_counter[0] <= 4'h0;
+			REV_counter[1] <= 4'h0; 
+			REV_counter[0] <= 4'h0; 
 			
-			end else begin 
-			RUN_counter[0] <= RUN_counter[0] + 1'b1; 
+			//need to reset the patternregister to zero as well, bc space reset entire game
+			
 			end
-			
-		FWD_counter[1] <= 4'h0;
-		FWD_counter[0] <= 4'h0;
-		REV_counter[1] <= 4'h0; 
-		REV_counter[0] <= 4'h0; 
-		
 		end
-	
-	
-	
-	
+
+
+		
+		//implement pattern recongization here 
+		//thinking of using a flag or case conditions to only recongize the letters we care for
+		
+		/* 1. fwd T, U, V, W, X, fwd++
+			2. rev X, W, V, U. T, rev++
+			3. mutiple patterns in single run, resue latest entered key in both patterns
+			4. pressing only of the 5 letters in the wrong order, breaks the pattern.
+			5. pressing any other keys dnm
+			6. pressing space clear the pattern reg
+		*/
+		
+		
 	end
 end
 

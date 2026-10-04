@@ -72,7 +72,7 @@ logic [3:0] FWD_counter [1:0];
 logic [3:0] REV_counter [1:0];
 logic [3:0] RUN_counter [1:0]; 
 
-logic [7:0] data_reg [3:0]; //register storing differnet states
+logic [7:0] pattern_reg [3:0]; //register storing differnet states
 
 // PS/2 controller
 PS2_controller ps2_unit (

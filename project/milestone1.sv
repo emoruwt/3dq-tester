@@ -24,13 +24,11 @@ module milestone1 (
     output logic Done
 );
 
-// =====================================================
-// FSM STATES
-// =====================================================
+
 
 typedef enum logic [4:0] {
 
-    // Lead-in states
+    //lLead-in states
     LI_READ_U0,
     LI_READ_U1,
     LI_READ_U2,
@@ -42,7 +40,7 @@ typedef enum logic [4:0] {
     LI_LOAD_V2,
     LI_CALCULATE_V,
 
-    // Common case states
+    // common case states
     S_U_CALCULATIONS,
     S_V_CALCULATIONS1,
     S_V_CALCULATIONS2,
@@ -55,9 +53,6 @@ typedef enum logic [4:0] {
 
 state_type state;
 
-// =====================================================
-// IMAGE PARAMETERS
-// =====================================================
 
 localparam logic [17:0] Y_BASE = 18'd0;
 localparam logic [17:0] U_BASE = 18'd18816;
@@ -67,31 +62,20 @@ localparam logic [17:0] RGB_BASE = 18'd205696;
 localparam int IMAGE_WIDTH = 224;
 localparam int IMAGE_HEIGHT = 168;
 
-// =====================================================
-// CONTROL
-// =====================================================
 
-logic running;
+//logic running;
 
-// =====================================================
-// PIXEL COUNTERS
-// =====================================================
 
 logic [9:0] pixel_X_pos;
 logic [9:0] pixel_Y_pos;
 
-// =====================================================
-// SRAM ADDRESS COUNTERS
-// =====================================================
+// sram address counters
 
 logic [17:0] Y_address_counter;
 logic [17:0] U_address_counter;
 logic [17:0] V_address_counter;
 logic [17:0] RGB_write_address;
 
-// =====================================================
-// SRAM DATA REGISTERS
-// =====================================================
 
 logic [15:0] Y_data;
 logic [15:0] U_word_buffer;
@@ -100,16 +84,11 @@ logic [15:0] V_word_buffer;
 logic [7:0] U_buffer;
 logic [7:0] V_buffer;
 
-// =====================================================
-// CHROMA SHIFT REGISTERS
-// =====================================================
 
 logic [7:0] U_data [0:7];
 logic [7:0] V_data [0:7];
 
-// =====================================================
-// INTERPOLATION SUMS
-// =====================================================
+//sum regs
 
 logic [8:0] U_sum1;
 logic [8:0] U_sum2;
@@ -121,9 +100,8 @@ logic [8:0] V_sum2;
 logic [8:0] V_sum3;
 logic [8:0] V_sum4;
 
-// =====================================================
-// YUV REGISTERS
-// =====================================================
+//registers y,u,v
+
 
 logic [7:0] Y_even;
 logic [7:0] Y_odd;
@@ -134,16 +112,11 @@ logic [7:0] U_odd;
 logic [7:0] V_even;
 logic [7:0] V_odd;
 
-// =====================================================
-// CHROMA INTERPOLATION ACCUMULATORS
-// =====================================================
+//accums
 
 logic signed [31:0] U_odd_accumulator;
 logic signed [31:0] V_odd_accumulator;
 
-// =====================================================
-// RGB ACCUMULATORS
-// =====================================================
 
 logic signed [31:0] R_even_accumulator;
 logic signed [31:0] G_even_accumulator;
@@ -153,9 +126,8 @@ logic signed [31:0] R_odd_accumulator;
 logic signed [31:0] G_odd_accumulator;
 logic signed [31:0] B_odd_accumulator;
 
-// =====================================================
-// RGB OUTPUT REGISTERS
-// =====================================================
+// rgb registers
+
 
 logic [7:0] R_even;
 logic [7:0] G_even;
@@ -165,9 +137,8 @@ logic [7:0] R_odd;
 logic [7:0] G_odd;
 logic [7:0] B_odd;
 
-// =====================================================
 // THREE SHARED COMBINATIONAL MULTIPLIERS
-// =====================================================
+
 
 logic signed [31:0] op1;
 logic signed [31:0] op2;
@@ -184,9 +155,6 @@ assign mult_1 = op1 * op2;
 assign mult_2 = op3 * op4;
 assign mult_3 = op5 * op6;
 
-// =====================================================
-// MULTIPLIER OPERAND SELECTION
-// =====================================================
 
 always_comb begin
 
@@ -235,9 +203,7 @@ always_comb begin
 
 end
 
-// =====================================================
 // FSM
-// =====================================================
 
 integer i;
 
@@ -339,9 +305,7 @@ always_ff @(posedge Clock_50 or negedge Resetn) begin
 
             case (state)
 
-                // =====================================
                 // LEAD-IN STATES
-                // =====================================
 
                 LI_READ_U0: begin
 
@@ -394,9 +358,7 @@ always_ff @(posedge Clock_50 or negedge Resetn) begin
                 end
 
 
-                // =====================================
                 // COMMON CASE STATES
-                // =====================================
 
                 S_U_CALCULATIONS: begin
 

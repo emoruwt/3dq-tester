@@ -33,7 +33,6 @@ typedef enum logic [4:0] {
   LI_READ_Y,                  // 6
   LI_LOAD_V1,                 // 7
   LI_LOAD_V2,                 // 8
-  LI_CALCULATE_V,             // 9
 
   // Common case states
   S_M1_INTERPOLATE_TAP_0,
@@ -67,8 +66,8 @@ logic [17:0] V_address_counter;
 logic [17:0] RGB_write_address;
 
 logic [15:0] Y_data;
-logic [15:0] U_word_buffer;
-logic [15:0] V_word_buffer;
+logic [7:0] U_word_buffer;
+logic [7:0] V_word_buffer;
 
 logic [7:0] U_buffer;
 logic [7:0] V_buffer;
@@ -118,7 +117,7 @@ logic [7:0] R_odd;
 logic [7:0] G_odd;
 logic [7:0] B_odd;
 
-// THREE SHARED COMBINATIONAL MULTIPLIERS
+//multipliers 
 logic signed [31:0] op1;
 logic signed [31:0] op2;
 logic signed [31:0] op3;
@@ -126,9 +125,9 @@ logic signed [31:0] op4;
 logic signed [31:0] op5;
 logic signed [31:0] op6;
 
-wire signed [31:0] mult_1;
-wire signed [31:0] mult_2;
-wire signed [31:0] mult_3;
+logic signed [31:0] mult_1;
+logic signed [31:0] mult_2;
+logic signed [31:0] mult_3;
 
 assign mult_1 = op1 * op2;
 assign mult_2 = op3 * op4;
@@ -144,21 +143,81 @@ always_comb begin
 
   case (state)
     S_M1_INTERPOLATE_TAP_0: begin
+	 
+	 op1 = $signed({1'b0, U_sum1});
+	 op2 = -32'sd6;
+	 
+	 op3 = $signed({1'b0, U_sum3});
+	 op4 = 32'sd59;
+	 
+	 op5 = $signed({1'b0, V_even}) - 32'sd128;
+	 op6 = -32'sd12083;
+	 
     end
 
     S_M1_INTERPOLATE_TAP_1: begin
+	 	
+	 op1 = $signed({1'b0, U_sum2});
+	 op2 = -32'sd21;
+	 
+	 op3 = $signed({1'b0, U_sum4});
+	 op4 = 32'sd224;
+	 
+	 op5 = $signed({1'b0, U_even}) - 32'sd128;
+	 op6 = -32'sd1352;
+	 
     end
 
     S_M1_INTERPOLATE_TAP_2: begin
+	 
+	 op1 = $signed({1'b0, V_sum1});
+	 op2 = -32'sd6;
+	 
+	 op3 = $signed({1'b0, V_sum3});
+	 op4 = 32'sd59;
+	 
+	 op5 = $signed({1'b0, V_even}) - 32'sd128;
+	 op6 = -32'sd4678;
+	 
     end
 
     S_M1_INTERPOLATE_TAP_3: begin
+	 
+	 op1 = $signed({1'b0, V_sum2});
+	 op2 = -32'sd21;
+	 
+	 op3 = $signed({1'b0, V_sum4});
+	 op4 = -32'sd224;
+	 
+	 op5 = $signed({1'b0, U_even}) - 32'sd128;
+	 op6 = 32'sd15409;
+	 
     end
 
     S_M1_COMPUTE_ODD_RED_GREEN: begin
+	 
+	 op1 = $signed({1'b0, U_sum2});
+	 op2 = -32'sd6;
+	 
+	 op3 = 32'b0;
+	 op4 = 32'b0;
+	 
+	 op5 = $signed({1'b0, U_even}) - 32'sd128;
+	 op6 = -32'sd1352;
+	 
     end
 
     S_M1_COMPUTE_ODD_BLUE_GREEN: begin
+	 
+	 op1 = $signed({1'b0, U_sum2});
+	 op2 = -32'sd6;
+	 
+	 op3 = 32'b0;
+	 op4 = 32'b0;
+	 
+	 op5 = $signed({1'b0, U_even}) - 32'sd128;
+	 op6 = -32'sd1352;
+	 
     end
 
     S_M1_ADVANCE_PIXEL_PAIR: begin
@@ -176,28 +235,23 @@ always_ff @(posedge Clock_50 or negedge Resetn) begin
   if (Resetn == 1'b0) begin
     // FSM
     state <= LI_READ_U0;
-    running <= 1'b0;
-    Done <= 1'b0;
-
-    // SRAM
+  //  running <= 1'b0;
+  //  Done <= 1'b0;
+	 
     SRAM_we_n <= 1'b1;
     SRAM_write_data <= 16'd0;
     SRAM_address <= 18'd0;
-
-    // Pixel counters
     pixel_X_pos <= 10'd0;
     pixel_Y_pos <= 10'd0;
 
-    // Address counters
     Y_address_counter <= Y_BASE;
     U_address_counter <= U_BASE;
     V_address_counter <= V_BASE;
     RGB_write_address <= RGB_BASE;
 
-    // SRAM data registers
     Y_data <= 16'd0;
-    U_word_buffer <= 16'd0;
-    V_word_buffer <= 16'd0;
+    U_word_buffer <= 8'd0;
+    V_word_buffer <= 8'd0;
 
     U_buffer <= 8'd0;
     V_buffer <= 8'd0;
@@ -208,138 +262,181 @@ always_ff @(posedge Clock_50 or negedge Resetn) begin
       V_data[i] <= 8'd0;
     end
 
-    // U interpolation sums
     U_sum1 <= 9'd0;
     U_sum2 <= 9'd0;
     U_sum3 <= 9'd0;
     U_sum4 <= 9'd0;
-
-    // V interpolation sums
     V_sum1 <= 9'd0;
     V_sum2 <= 9'd0;
     V_sum3 <= 9'd0;
     V_sum4 <= 9'd0;
 
-    // Chroma accumulators
     U_odd_accumulator <= 32'sd0;
     V_odd_accumulator <= 32'sd0;
 
-    // YUV registers
     Y_even <= 8'd0;
     Y_odd <= 8'd0;
-
     U_even <= 8'd0;
     U_odd <= 8'd0;
-
     V_even <= 8'd0;
     V_odd <= 8'd0;
 
-    // Even RGB accumulators
     R_even_accumulator <= 32'sd0;
     G_even_accumulator <= 32'sd0;
     B_even_accumulator <= 32'sd0;
-
-    // Odd RGB accumulators
     R_odd_accumulator <= 32'sd0;
     G_odd_accumulator <= 32'sd0;
     B_odd_accumulator <= 32'sd0;
 
-    // Even RGB output
+
     R_even <= 8'd0;
     G_even <= 8'd0;
     B_even <= 8'd0;
-
-    // Odd RGB output
     R_odd <= 8'd0;
     G_odd <= 8'd0;
     B_odd <= 8'd0;
+	 
   end else begin
-    if (running == 1'b0) begin
-      if (Start == 1'b1) begin
-        running <= 1'b1;
-        Done <= 1'b0;
-        state <= LI_READ_U0;
-      end
-    end else begin
+
       case (state)
         // LEAD-IN STATES
         LI_READ_U0: begin
-          state <= LI_READ_U1;
+				
+				SRAM_we_n <= 1'b1; 
+				SRAM_address <= 18'd18816; 
+		  
+				state <= LI_READ_U1;
         end
 
         LI_READ_U1: begin
-          state <= LI_READ_U2;
+		  
+				SRAM_we_n <= 1'b1; 
+				SRAM_address <= SRAM_address + 1'b1; 
+				
+				state <= LI_READ_U2;
         end
 
         LI_READ_U2: begin
-          state <= LI_READ_V0;
+				SRAM_we_n <= 1'b1; 
+				SRAM_address <= SRAM_address + 1'b1; 
+				
+				state <= LI_READ_V0;
         end
 
         LI_READ_V0: begin
-          state <= LI_READ_V1;
+				SRAM_we_n <= 1'b1; 
+				SRAM_address <= 18'd28224; 
+				
+				U_data[7] <= SRAM_read_data[15:8]; // U0
+				U_data[6] <= SRAM_read_data[15:8]; // U0
+				U_data[5] <= SRAM_read_data[15:8]; // U0
+				U_data[4] <= SRAM_read_data[15:8]; // U0
+				U_data[3] <= SRAM_read_data[7:0];  // U1
+				
+				state <= LI_READ_V1;
         end
 
         LI_READ_V1: begin
-          state <= LI_READ_V2;
+				SRAM_we_n <= 1'b1; 
+				SRAM_address <= SRAM_address + 1'b1; 
+				
+				U_data[2] <= SRAM_read_data[15:8]; // U2
+				U_data[1] <= SRAM_read_data[7:0];  // U3
+				
+				state <= LI_READ_V2;
         end
 
         LI_READ_V2: begin
-          state <= LI_READ_Y;
+				SRAM_we_n <= 1'b1; 
+				SRAM_address <= SRAM_address + 1'b1; 
+				
+				U_data[0] <= SRAM_read_data[15:8]; // U4
+				U_buffer <= SRAM_read_data[7:0]; // U0
+				
+				state <= LI_READ_Y;
         end
 
         LI_READ_Y: begin
-          state <= LI_LOAD_V1;
+				SRAM_we_n <= 1'b1; 
+				SRAM_address <= 18'd0; 
+				
+				V_data[7] <= SRAM_read_data[15:8]; // V0
+				V_data[6] <= SRAM_read_data[15:8]; // V0
+				V_data[5] <= SRAM_read_data[15:8]; // V0
+				V_data[4] <= SRAM_read_data[15:8]; // V0
+				V_data[3] <= SRAM_read_data[7:0];  // V1		
+		
+		
+				//need to add u registers here 
+				U_sum1 <= U_data[7] + U_data[0]; 
+				U_sum2 <= U_data[6] + U_data[1];
+				U_sum3 <= U_data[5] + U_data[2];
+				U_sum4 <= U_data[4] + U_data[3];	
+							
+				state <= LI_LOAD_V1;
         end
 
         LI_LOAD_V1: begin
-          state <= LI_LOAD_V2;
+		  
+				V_data[2] <= SRAM_read_data[15:8]; // V2
+				V_data[1] <= SRAM_read_data[7:0];  // V3	
+		  
+				state <= LI_LOAD_V2;
         end
 
         LI_LOAD_V2: begin
-          state <= LI_CALCULATE_V;
+		  
+				V_data[0] <= SRAM_read_data[15:8]; // V0
+				V_buffer <= SRAM_read_data[7:0];   // V1			  
+				state <= S_M1_INTERPOLATE_TAP_0;
         end
 
-        LI_CALCULATE_V: begin
-          state <= S_M1_INTERPOLATE_TAP_0;
-        end
 
         // COMMON CASE STATES
         S_M1_INTERPOLATE_TAP_0: begin
-          state <= S_M1_INTERPOLATE_TAP_1;
+		  		  
+				Y_data <= SRAM_read_data[15:0]; 
+		  
+				//need to add v regists here.
+				V_sum1 <= V_data[7] + V_data[0]; 
+				V_sum2 <= V_data[6] + V_data[1];
+				V_sum3 <= V_data[5] + V_data[2];
+				V_sum4 <= V_data[4] + V_data[3];	
+				
+				state <= S_M1_INTERPOLATE_TAP_1;
         end
 
         S_M1_INTERPOLATE_TAP_1: begin
-          state <= S_M1_INTERPOLATE_TAP_2;
+				state <= S_M1_INTERPOLATE_TAP_2;
         end
 
         S_M1_INTERPOLATE_TAP_2: begin
-          state <= S_M1_INTERPOLATE_TAP_3;
+				state <= S_M1_INTERPOLATE_TAP_3;
         end
 
         S_M1_INTERPOLATE_TAP_3: begin
-          state <= S_M1_COMPUTE_ODD_RED_GREEN;
+				state <= S_M1_COMPUTE_ODD_RED_GREEN;
         end
 
         S_M1_COMPUTE_ODD_RED_GREEN: begin
-          state <= S_M1_COMPUTE_ODD_BLUE_GREEN;
+				state <= S_M1_COMPUTE_ODD_BLUE_GREEN;
         end
 
         S_M1_COMPUTE_ODD_BLUE_GREEN: begin
-          state <= S_M1_ADVANCE_PIXEL_PAIR;
+				state <= S_M1_ADVANCE_PIXEL_PAIR;
         end
 
         S_M1_ADVANCE_PIXEL_PAIR: begin
-          // TODO: Implement pixel-pair counter,
-          // end-of-row detection, row address
-          // updates, and image completion.
-          state <= S_M1_INTERPOLATE_TAP_0;
+				// TODO: Implement pixel-pair counter,
+				// end-of-row detection, row address
+				// updates, and image completion.
+				state <= S_M1_INTERPOLATE_TAP_0;
         end
 
         default: begin
-          state <= LI_READ_U0;
+				state <= LI_READ_U0;
         end
       endcase
-    end
   end
 end
 

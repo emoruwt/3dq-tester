@@ -40,7 +40,6 @@ typedef enum logic [4:0] {
   S_M1_INTERPOLATE_TAP_3,
   S_M1_COMPUTE_ODD_RED_GREEN,
   S_M1_COMPUTE_ODD_BLUE_GREEN,
-  S_M1_ADVANCE_PIXEL_PAIR
 } state_type;
 
 state_type state;
@@ -149,44 +148,49 @@ always_comb begin
 	 op3 = $signed({1'b0, U_sum3});
 	 op4 = 32'sd59;
 	 
-	 op5 = $signed({1'b0, V_even}) - 32'sd128;
-	 op6 = -32'sd12083;
+	 
+	 op5 = $signed({1'b0, U_sum2});
+	 op6 = -32'sd21;
 	 
     end
 
     S_M1_INTERPOLATE_TAP_1: begin
 	 	
-	 op1 = $signed({1'b0, U_sum2});
-	 op2 = -32'sd21;
+	 op1 = $signed({1'b0, U_sum4});
+	 op2 = 32'sd224;
 	 
-	 op3 = $signed({1'b0, U_sum4});
-	 op4 = 32'sd224;
+	 op3 = $signed({1'b0, V_sum1});
+	 op4 = -32'sd6;
 	 
-	 op5 = $signed({1'b0, U_even}) - 32'sd128;
-	 op6 = -32'sd1352;
+	 
+	 op5 = $signed({1'b0, V_sum2});
+	 op6 = -32'sd21;
+	 
 	 
     end
 
     S_M1_INTERPOLATE_TAP_2: begin
 	 
-	 op1 = $signed({1'b0, V_sum1});
-	 op2 = -32'sd6;
+	 op1 = $signed({1'b0, V_sum3});
+	 op2 = 32'sd59;
 	 
-	 op3 = $signed({1'b0, V_sum3});
-	 op4 = 32'sd59;
+	 op3 = $signed({1'b0, V_sum4});
+	 op4 = 32'sd224;
 	 
 	 op5 = $signed({1'b0, V_even}) - 32'sd128;
-	 op6 = -32'sd4678;
+	 op6 = 32'sd12083;
 	 
+	 
+
     end
 
     S_M1_INTERPOLATE_TAP_3: begin
 	 
-	 op1 = $signed({1'b0, V_sum2});
-	 op2 = -32'sd21;
+	 op1 = $signed({1'b0, U_even}) - 32'sd128;
+	 op2 = -32'sd1352;
 	 
-	 op3 = $signed({1'b0, V_sum4});
-	 op4 = -32'sd224;
+	 op1 = $signed({1'b0, V_even}) - 32'sd128;
+	 op2 = -32'sd4678;
 	 
 	 op5 = $signed({1'b0, U_even}) - 32'sd128;
 	 op6 = 32'sd15409;
@@ -197,9 +201,7 @@ always_comb begin
 	 
 	 op1 = $signed({1'b0, U_sum2});
 	 op2 = -32'sd6;
-	 
-	 op3 = 32'b0;
-	 op4 = 32'b0;
+
 	 
 	 op5 = $signed({1'b0, U_even}) - 32'sd128;
 	 op6 = -32'sd1352;
@@ -217,9 +219,6 @@ always_comb begin
 	 op5 = $signed({1'b0, U_even}) - 32'sd128;
 	 op6 = -32'sd1352;
 	 
-    end
-
-    S_M1_ADVANCE_PIXEL_PAIR: begin
     end
 
     default: begin
@@ -423,15 +422,12 @@ always_ff @(posedge Clock_50 or negedge Resetn) begin
         end
 
         S_M1_COMPUTE_ODD_BLUE_GREEN: begin
-				state <= S_M1_ADVANCE_PIXEL_PAIR;
-        end
-
-        S_M1_ADVANCE_PIXEL_PAIR: begin
 				// TODO: Implement pixel-pair counter,
 				// end-of-row detection, row address
-				// updates, and image completion.
+				// updates, and image completion.		  
 				state <= S_M1_INTERPOLATE_TAP_0;
         end
+
 
         default: begin
 				state <= LI_READ_U0;

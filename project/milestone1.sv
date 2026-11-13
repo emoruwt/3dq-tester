@@ -30,9 +30,8 @@ typedef enum logic [4:0] {
   LI_READ_V0,                 // 3
   LI_READ_V1,                 // 4
   LI_READ_V2,                 // 5
-  LI_READ_Y,                  // 6
+  LI_LOAD_V0,                  // 6
   LI_LOAD_V1,                 // 7
-  LI_LOAD_V2,                 // 8
 
   // Common case states
   S_M1_INTERPOLATE_TAP_0,
@@ -353,12 +352,10 @@ always_ff @(posedge Clock_50 or negedge Resetn) begin
 				U_data[0] <= SRAM_read_data[15:8]; // U4
 				U_buffer <= SRAM_read_data[7:0]; // U0
 				
-				state <= LI_READ_Y;
+				state <= LI_LOAD_V0;
         end
 
-        LI_READ_Y: begin
-				SRAM_we_n <= 1'b1; 
-				SRAM_address <= 18'd0; 
+        LI_LOAD_V0: begin
 				
 				V_data[7] <= SRAM_read_data[15:8]; // V0
 				V_data[6] <= SRAM_read_data[15:8]; // V0
@@ -378,6 +375,9 @@ always_ff @(posedge Clock_50 or negedge Resetn) begin
 
         LI_LOAD_V1: begin
 		  
+				SRAM_we_n <= 1'b1; 
+				SRAM_address <= 18'd0; 
+				
 				V_data[2] <= SRAM_read_data[15:8]; // V2
 				V_data[1] <= SRAM_read_data[7:0];  // V3	
 		  
